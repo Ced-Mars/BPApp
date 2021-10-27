@@ -47,6 +47,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       title: 'Production-BPApp',
+      template: './public/index.html'
     }),
 ],
 };
