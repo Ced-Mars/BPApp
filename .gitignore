@@ -1,7 +1,7 @@
 # dependencies
 /build-process-app/node_modules
-/service-backend/node_modules
 /build-process-app/.env
-/service-backend/.env
-/build-process-app/dist
-/service-backend/dist
+
+build-process-app/service-backend/node_modules
+build-process-app/service-backend/.env
+build-process-app/service-backend/dist

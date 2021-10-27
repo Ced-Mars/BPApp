@@ -6,7 +6,7 @@ module.exports = {
     devtool: 'inline-source-map',
     devServer :{
         port: "9500",
-        static: './dist',
+        static: './service-backend/dist',
         open: true,
     },
 };
