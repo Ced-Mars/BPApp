@@ -45,20 +45,20 @@ function main(){
                 throw error1;
               }
               channel = chan;
-              var exchange = 'build_process_all';
+              var exchange = 'sequencer';
           
               channel.assertExchange(exchange, 'topic', {
                 durable: false
               });
           
-              channel.assertQueue('BuildProcess', {
+              channel.assertQueue('', {
               }, function(error2, q) {
                 if (error2) {
                   throw error2;
                 }
                 console.log(' [*] Waiting for logs. To exit press CTRL+C');
                 key = 'buildp.all';
-                key2 = 'buildp.adv';
+                key2 = 'buildp.report';
                 channel.bindQueue(q.queue, exchange, key);
                 channel.bindQueue(q.queue, exchange, key2);
                 
