@@ -12,7 +12,7 @@ app.use(express.static("dist"));
 //Global variables where are stored informations about the messaging server and the channel
 var connection, channel;
 var message = "Attente de la Recette";
-const server_path = "amqp://guest:123456789@localhost";
+const server_path = "amqp://localhost";
 
 //Pass the Cross Origin error, do not deploy
 const io = require("socket.io")(server, {
