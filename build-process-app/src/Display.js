@@ -13,14 +13,17 @@ export default function Display() {
   const [response, setResponse] = useState([]);
   const [action, setAction] = useState("");
   const [statut, setStatut] = useState("");
+  const [completedAction, setCompletedAction] = React.useState(new Set());
+
   
   useEffect(() => {
     socket.on("FromBPAll", (a) => {
       setResponse(a);
+      setCompletedAction(new Set());
     });
     socket.on("FromBPAdv", (a) => {
       setAction(a["id"]);
-      setStatut(a["statut"]);
+      setStatut(a["status"]);
     });
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
@@ -29,7 +32,7 @@ export default function Display() {
   
   if (response && response.length!==0 && response!== "Attente de la Recette") {
     console.log("dans render sequence");
-    return <RenderSequence props={response} action={action} statut={statut} />;
+    return <RenderSequence props={response} action={action} statut={statut} completedAction={completedAction} setCompletedAction={setCompletedAction} />;
   }
   return <RenderText props={response} />;
   
@@ -52,7 +55,7 @@ function RenderText({ props }) {
   );
 }
 
-function RenderSequence({ props, action, statut }) {
+function RenderSequence({ props, action, statut, completedAction, setCompletedAction }) {
   const root = {
     flex:1,
     width: "100%",
@@ -70,21 +73,19 @@ function RenderSequence({ props, action, statut }) {
     flex: "1 0 auto",
     display:"flex",
     alignItems:"stretch",
-    height:"0px",
-    overflowY: "hidden",
-    overflowY:"scroll"
+    height:"0px"
   };
   const list = {
     flex:1,
     display:"flex",
     flexDirection:"column",
-    overflow:"hidden",
+    overflow:"auto",
     margin:"5px",
     padding:"5px"
   };
 
   // Actions
-  const [completedAction, setCompletedAction] = React.useState(new Set());
+  
 
   const handleCompleteAction = () => {
     console.log("dans handlecompleteaction", action);
