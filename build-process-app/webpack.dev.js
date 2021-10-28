@@ -8,5 +8,6 @@ module.exports = {
         port: "9500",
         static: './service-backend/dist',
         open: true,
+        hot:true,
     },
 };

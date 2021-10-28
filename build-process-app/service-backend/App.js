@@ -63,23 +63,16 @@ function main(){
                 channel.bindQueue(q.queue, exchange, key2);
                 
                 channel.consume(q.queue, function(msg) {
+                  console.log("reçu : ", msg.content.toString());
                   // Emitting a new message. Will be consumed by the client
                   if(msg.fields.routingKey == key){
                     message = JSON.parse(msg.content);
                     socket.emit("FromBPAll", message);
-                    console.log("%s message sent : ",msg.fields.routingKey, message);
+                    console.log("%s message sent BPALL : ",msg.fields.routingKey, message);
                   }else if (msg.fields.routingKey == key2){
-                    if(msg.content.toString() == "return home movement"){
-                      socket.emit("FromBPAdv", msg.content.toString());
-                      console.log("%s message sent : ",msg.fields.routingKey, msg.content.toString());
-                      message = "Attente de la Recette";
-                      socket.emit("FromBPAll", message);
-                      console.log("%s message sent : ", message);
-                    }else{
-                      socket.emit("FromBPAdv", msg.content.toString());
-                      console.log("%s message sent : ",msg.fields.routingKey, msg.content.toString());
-                    }
-                    
+                      console.log("dans report");
+                      socket.emit("FromBPAdv", JSON.parse(msg.content));
+                      console.log("%s message sent : ",msg.fields.routingKey, JSON.parse(msg.content));
                   }
                 }, {
                   noAck: true
