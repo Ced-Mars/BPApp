@@ -26,6 +26,8 @@ main();
 //Calling main function in socketio-connection.js
 function main(){
   var exchange = 'sequencer';
+  key = 'buildp.all';
+  key2 = 'buildp.report';
   //Connexion to rabbitMQ server
   try {
     //Creating connection with rabbitMQ server
@@ -46,8 +48,7 @@ function main(){
             throw error2;
           }
           console.log(' [*] Waiting for logs. To exit press CTRL+C');
-          key = 'buildp.all';
-          key2 = 'buildp.report';
+          
           channel.bindQueue(q.queue, exchange, key);
           channel.bindQueue(q.queue, exchange, key2);
           
