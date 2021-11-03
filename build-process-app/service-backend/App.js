@@ -28,6 +28,7 @@ function main(){
   var exchange = 'sequencer';
   key = 'buildp.all';
   key2 = 'buildp.report';
+  key3 = 'buildp.reset';
   //Connexion to rabbitMQ server
   try {
     //Creating connection with rabbitMQ server
@@ -42,7 +43,7 @@ function main(){
         channel.assertExchange(exchange, 'topic', {
           durable: false
         });
-        channel.assertQueue('', {
+        channel.assertQueue('', { exclusive: true
         }, function(error2, q) {
           if (error2) {
             throw error2;
@@ -57,11 +58,8 @@ function main(){
             if(msg.fields.routingKey == key){
               message = JSON.parse(msg.content);
               socket.emit("FromBPAll", message);
-              console.log("%s message sent BPALL : ",msg.fields.routingKey, message);
             }else if (msg.fields.routingKey == key2){
-                console.log("dans report");
-                socket.emit("FromBPAdv", JSON.parse(msg.content));
-                console.log("%s message sent : ",msg.fields.routingKey, JSON.parse(msg.content));
+              socket.emit("FromBPAdv", JSON.parse(msg.content));
             }
           }, {
             noAck: true
@@ -71,6 +69,16 @@ function main(){
             console.log("Client is connected");
             socket.emit("FromBPAll", message);
             console.log("emitted");
+
+            socket.on("Reset", (a) => {
+              console.log("Reset");
+              message = "Attente de la Recette";
+              socket.emit("FromBPAll", message);
+              channel.publish(exchange, key3, Buffer.from("reset"));
+            });
+
+            socket.on("AskAction", (a) => {
+            });
 
             
             //Called when the client disconnect from the socketio link

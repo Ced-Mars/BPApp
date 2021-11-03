@@ -13,36 +13,44 @@ export default function Display() {
   const [response, setResponse] = useState([]);
   const [action, setAction] = useState("");
   const [statut, setStatut] = useState("");
+  const [dansSeq, setDansSeq]= useState(true);
   const [completedAction, setCompletedAction] = React.useState(new Set());
   const [activeStep, setActiveStep] = React.useState(0);
-  const [completedStep, setCompletedStep] = React.useState(new Set());
+  const [visibleStep, setVisibleStep] = React.useState(0);
+  const [completedStep, setCompletedStep] = React.useState({});
 
   
   useEffect(() => {
     socket.on("FromBPAll", (a) => {
       setResponse(a);
-      setCompletedAction(new Set());
     });
     socket.on("FromBPAdv", (a) => {
       setAction(a["id"]);
       setStatut(a["status"]);
     });
+    console.log("1");
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
   }, [socket]);
 
+
   
   if (response && response.length!==0 && response!== "Attente de la Recette") {
-    console.log("dans render sequence");
     return <RenderSequence 
     props={response} 
     setProps={setResponse}
     action={action} 
+    setAction={setAction}
     statut={statut} 
+    setStatut={setStatut}
+    dansSeq={dansSeq}
+    setDansSeq={setDansSeq}
     completedAction={completedAction} 
     setCompletedAction={setCompletedAction}
     activeStep={activeStep}
     setActiveStep={setActiveStep}
+    visibleStep={visibleStep}
+    setVisibleStep={setVisibleStep}
     completedStep={completedStep}
     setCompletedStep={setCompletedStep} />;
   }
@@ -74,12 +82,18 @@ function RenderText({ props }) {
 function RenderSequence({ 
   props,
   setProps,
-  action, 
-  statut, 
+  action,
+  setAction,
+  statut,
+  setStatut,
+  dansSeq,
+  setDansSeq,
   completedAction, 
   setCompletedAction,
   activeStep,
   setActiveStep,
+  visibleStep,
+  setVisibleStep,
   completedStep,
   setCompletedStep 
 }) {
@@ -91,8 +105,6 @@ function RenderSequence({
   };
   const footer = {
     display:"flex",
-    flexDirection:"column",
-    alignContent:"stretch",
     marginBottom:"10px",
     flex: "0 0 auto"
   };
@@ -113,24 +125,26 @@ function RenderSequence({
   const stepper = {
     flex: "1 0 auto"
   };
+  const instructions = {
+    flex: 1
+  };
+  const footerReset = {
+    flex: 1
+  };
 
   // Gestion Actions
   const handleCompleteAction = () => {
-    console.log("dans handlecompleteaction", action);
     const newCompleted = new Set(completedAction);
     newCompleted.add(action);
     setCompletedAction(newCompleted);
+    if(props[activeStep][props[activeStep].length - 1]["id"] == action){
+      handleComplete();
+    }
   };
 
   function isActionComplete(action) {
     return completedAction.has(action);
   };
-
-  useEffect(() => {
-    if(!isActionComplete(action)){
-      handleCompleteAction();
-    }
-  }, [action]);
 
   //Gestion Steps
   const totalSteps = () => {
@@ -155,24 +169,41 @@ function RenderSequence({
     return Object.keys(completedStep).length;
   };
 
-  const isLastStep = () => {
-    return activeStep === totalSteps() - 1;
-  };
-
   const allStepsCompleted = () => {
     return completedSteps() === totalSteps();
   };
 
+  const isLastStep = () => {
+    return activeStep === totalSteps() - 1;
+  };
+
   const handleNext = () => {
-    setActiveStep(activeStep + 1);
+    if(dansSeq == true){
+      const newActiveStep =
+        isLastStep()
+          ? activeStep
+          : activeStep + 1;
+      setActiveStep(newActiveStep);
+      setVisibleStep(newActiveStep);
+    }else{
+      const newActiveStep =
+        isLastStep()
+          ? activeStep
+          : activeStep + 1;
+      setActiveStep(newActiveStep);
+    }
+    
   };
 
   const handleStep = (step) => () => {
-    setActiveStep(step);
+    if(dansSeq == true){
+      setDansSeq(false);
+    }
+    setVisibleStep(step);
   };
 
   const handleComplete = () => {
-    const newCompleted = completed;
+    const newCompleted = completedStep;
     newCompleted[activeStep] = true;
     setCompletedStep(newCompleted);
     handleNext();
@@ -181,26 +212,36 @@ function RenderSequence({
   //Reset everything
   const handleReset = () => {
     setActiveStep(0);
-    setCompletedStep(new Set());
+    setVisibleStep(0);
+    setCompletedStep({});
     setProps([]);
     setCompletedAction(new Set());
     setAction("");
     setStatut("");
+    setDansSeq(true);
+    socket.emit("Reset", "reset");
   };
 
   //Get back to the active (working) step/action
   const handleFollow = () => {
-
+    setVisibleStep(activeStep);
+    if(dansSeq == false){
+      setDansSeq(true);
+    }
   }
 
-  
+  useEffect(() => {
+    if(!isActionComplete(action)){
+      handleCompleteAction();
+    }
+  }, [action]);
 
   return (
       <div style={root}>
-        <Stepper alternativeLabel nonLinear activeStep={activeStep}>
+        <Stepper alternativeLabel nonLinear activeStep={visibleStep}>
           {getSteps(props).map((label, index) => {
             return (
-              <Step key={index} completed={isStepComplete(index)}>
+              <Step key={index} completed={completedStep[index]}>
                 <StepButton
                   focusRipple={true}
                   onClick={handleStep(index)}
@@ -216,7 +257,7 @@ function RenderSequence({
         
         <div style={content}>
           <List style={list}>
-            {props[activeStep].map((value, i, arr) => {
+            {props[visibleStep].map((value, i, arr) => {
               return(
                   <ListItem button key={value["id"]} style={isActionComplete(value["id"]) ? {flex:1, backgroundColor:"lightgreen"} : {flex:1}}> 
                     <ListItemText primary={value["description"]}>
@@ -228,19 +269,23 @@ function RenderSequence({
           
         </div>
 
-        <div style={footer}>
           {allStepsCompleted() ? (
-            <div className={classes.footerData}>
-              <Typography className={classes.instructions}>
+            <div style={footer}>
+              <Typography style={instructions}>
                 Process has ended, you can reset it or launch a new process.
               </Typography>
-              <Button onClick={handleReset}>Reset</Button>
+              <Button onClick={handleReset} style={footerReset}>Reset</Button>
             </div>
             ) : 
-            <p>Action en cours : {action} - Statut : {statut}</p>
+            <div style={footer}>
+              <Typography style={instructions}>
+                Action en cours : {action} - Statut : {statut}
+              </Typography>
+              {dansSeq ? null : <Button onClick={handleFollow} style={footerReset}>Reprendre la séquence en cours</Button>}
+              
+            </div>
           }
         </div>
-      </div>
   );
 }
 
