@@ -28,7 +28,16 @@ export default function Display() {
       setAction(a["id"]);
       setStatut(a["status"]);
     });
-    console.log("1");
+    /* socket.on("GetAction", (a) => {
+      console.log("dans socket getAction : ",a);
+      setCompletedAction(new Set(a));
+    });
+    socket.on("ActiveStep", (a) => {
+      setActiveStep(a);
+    });
+    socket.on("CompletedStep", (a) => {
+      setCompletedStep(a);
+    }); */
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
   }, [socket]);
@@ -143,6 +152,11 @@ function RenderSequence({
   };
 
   function isActionComplete(action) {
+    /* if(completedAction.size == 0 || completedAction == {}){
+      return false;
+    }else{
+      return completedAction.has(action);
+    } */
     return completedAction.has(action);
   };
 

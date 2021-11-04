@@ -25,6 +25,9 @@ main();
 
 //Calling main function in socketio-connection.js
 function main(){
+  /* var actionCompleted = new Set();
+  var activeStep = 0;
+  var completedStep = {}; */
   var exchange = 'sequencer';
   key = 'buildp.all';
   key2 = 'buildp.report';
@@ -59,6 +62,17 @@ function main(){
               message = JSON.parse(msg.content);
               socket.emit("FromBPAll", message);
             }else if (msg.fields.routingKey == key2){
+              /* actionCompleted.add(JSON.parse(msg.content));
+              console.log("new actioncompleted : ", actionCompleted);
+              if(JSON.parse(msg.content)["id"] == message[activeStep][message[activeStep].length -1]["id"]){
+                completedStep[activeStep]=true;
+                socket.emit("CompletedStep", activeStep);
+                if(activeStep < message.length - 1){
+                  activeStep+=1;
+                  socket.emit("ActiveStep", activeStep);
+                }
+              }
+              socket.emit("GetAction", actionCompleted); */
               socket.emit("FromBPAdv", JSON.parse(msg.content));
             }
           }, {
@@ -71,13 +85,17 @@ function main(){
             console.log("emitted");
 
             socket.on("Reset", (a) => {
-              console.log("Reset");
+              /* actionCompleted.clear();
+              completedStep = {};
+              activeStep = 0;
+              console.log("action completed reset : ", actionCompleted); */
               message = "Attente de la Recette";
               socket.emit("FromBPAll", message);
               channel.publish(exchange, key3, Buffer.from("reset"));
             });
 
             socket.on("AskAction", (a) => {
+              //socket.emit("GetAction", actionCompleted);
             });
 
             
