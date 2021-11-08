@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {List, ListItem, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel } from "@mui/material";
+import {List, ListItem, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton } from "@mui/material";
 import "./Display.css";
 import socketIOClient from "socket.io-client";
 
@@ -61,7 +61,8 @@ export default function Display() {
     visibleStep={visibleStep}
     setVisibleStep={setVisibleStep}
     completedStep={completedStep}
-    setCompletedStep={setCompletedStep} />;
+    setCompletedStep={setCompletedStep}
+    />
   }
   return <RenderText props={response} />;
   
@@ -71,6 +72,7 @@ export default function Display() {
 function RenderText({ props }) {
   const divStyle = {
     color: "blue",
+    flex: 1,
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -104,7 +106,7 @@ function RenderSequence({
   visibleStep,
   setVisibleStep,
   completedStep,
-  setCompletedStep 
+  setCompletedStep
 }) {
   const root = {
     flex:1,
@@ -175,10 +177,6 @@ function RenderSequence({
     return array;
   }
 
-  function isStepComplete(step) {
-    return completedStep.has(step);
-  }
-
   const completedSteps = () => {
     return Object.keys(completedStep).length;
   };
@@ -236,7 +234,7 @@ function RenderSequence({
     socket.emit("Reset", "reset");
   };
 
-  //Get back to the active (working) step/action
+  //Get back to the active (working) step
   const handleFollow = () => {
     setVisibleStep(activeStep);
     if(dansSeq == false){
@@ -273,10 +271,10 @@ function RenderSequence({
           <List style={list}>
             {props[visibleStep].map((value, i, arr) => {
               return(
-                  <ListItem button key={value["id"]} style={isActionComplete(value["id"]) ? {flex:1, backgroundColor:"lightgreen"} : {flex:1}}> 
+                  <ListItemButton key={value["id"]} style={isActionComplete(value["id"]) ? {flex:1, backgroundColor:"lightgreen"} : {flex:1}} autoFocus={dansSeq ? value["id"]==action ? true : false : false}> 
                     <ListItemText primary={value["description"]}>
                     </ListItemText>
-                  </ListItem>
+                  </ListItemButton>
               );
             })}
           </List>
