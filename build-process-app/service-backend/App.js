@@ -56,6 +56,7 @@ function main(){
           
           channel.bindQueue(q.queue, exchange, key);
           channel.bindQueue(q.queue, exchange, key2);
+          channel.bindQueue(q.queue, exchange, key3);
           
           channel.consume(q.queue, function(msg) {
             // Emitting a new message. Will be consumed by the client
@@ -78,6 +79,13 @@ function main(){
               }
               socket.emit("GetAction", actionCompleted);
               socket.emit("FromBPAdv", action);
+            }else if (msg.fields.routingKey == key3){
+              actionCompleted = [];
+              completedStep = {};
+              activeStep = 0;
+              socket.emit("ResetFromBackend", "reset");
+              message = "Attente de la Recette";
+              socket.emit("FromBPAll", message);
             }
           }, {
             noAck: true
@@ -93,7 +101,7 @@ function main(){
 
             console.log("emitted");
 
-            socket.on("Reset", (a) => {
+            socket.on("ResetFromClient", (a) => {
               actionCompleted = [];
               completedStep = {};
               activeStep = 0;

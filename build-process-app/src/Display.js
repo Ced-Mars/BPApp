@@ -21,6 +21,7 @@ export default function Display() {
   
   useEffect(() => {
     socket.on("FromBPAll", (a) => {
+      console.log("réponse reçue", a);
       setResponse(a);
     });
     socket.on("FromBPAdv", (a) => {
@@ -35,6 +36,16 @@ export default function Display() {
     });
     socket.on("ActiveStep", (a) => {
       setActiveStep(a);
+    });
+    socket.on("ResetFromBackend", (a) => {
+      setActiveStep(0);
+      setVisibleStep(0);
+      setCompletedStep({});
+      setProps([]);
+      setCompletedAction([]);
+      setAction("");
+      setStatut("");
+      setDansSeq(true);
     });
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
@@ -185,7 +196,7 @@ function RenderSequence({
     setAction("");
     setStatut("");
     setDansSeq(true);
-    socket.emit("Reset", "reset");
+    socket.emit("ResetFromClient", "reset");
   };
 
   //Get back to the active (working) step
