@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {List, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton } from "@mui/material";
 import "./Display.css";
-import socketIOClient from "socket.io-client";
-
-const ENDPOINT = "http://127.0.0.1:4001";
-const socket = socketIOClient(ENDPOINT);
-
-
+import io from "socket.io-client";
 
 //Fonctionnement avec socket
 export default function Display() {
+  const ENDPOINT = "http://127.0.0.1:4001";
+  const [socket, setSocket] = useState(null);
   const [response, setResponse] = useState([]);
   const [action, setAction] = useState("");
   const [statut, setStatut] = useState("");
@@ -18,37 +15,44 @@ export default function Display() {
   const [activeStep, setActiveStep] = React.useState(0);
   const [visibleStep, setVisibleStep] = React.useState(0);
   const [completedStep, setCompletedStep] = React.useState({});
+
+  useEffect(() => {
+    setSocket(io(ENDPOINT));
+    return () => io(ENDPOINT).close();
+  }, []);
   
   useEffect(() => {
-    socket.on("FromBPAll", (a) => {
-      console.log("réponse reçue", a);
-      setResponse(a);
-    });
-    socket.on("FromBPAdv", (a) => {
-      setAction(a["id"]);
-      setStatut(a["status"]);
-    });
-    socket.on("GetAction", (a) => {
-      setCompletedAction(a);
-    });
-    socket.on("CompletedStep", (a) => {
-      setCompletedStep(a);
-    });
-    socket.on("ActiveStep", (a) => {
-      setActiveStep(a);
-    });
-    socket.on("ResetFromBackend", (a) => {
-      setActiveStep(0);
-      setVisibleStep(0);
-      setCompletedStep({});
-      setResponse([]);
-      setCompletedAction([]);
-      setAction("");
-      setStatut("");
-      setDansSeq(true);
-    });
-    // CLEAN UP THE EFFECT
-    return () => socket.disconnect();
+    if(socket){
+      socket.on("FromBPAll", (a) => {
+        console.log("réponse reçue", a);
+        setResponse(a);
+      });
+      socket.on("FromBPAdv", (a) => {
+        setAction(a["id"]);
+        setStatut(a["status"]);
+      });
+      socket.on("GetAction", (a) => {
+        setCompletedAction(a);
+      });
+      socket.on("CompletedStep", (a) => {
+        setCompletedStep(a);
+      });
+      socket.on("ActiveStep", (a) => {
+        setActiveStep(a);
+      });
+      socket.on("ResetFromBackend", (a) => {
+        setActiveStep(0);
+        setVisibleStep(0);
+        setCompletedStep({});
+        setResponse([]);
+        setCompletedAction([]);
+        setAction("");
+        setStatut("");
+        setDansSeq(true);
+      });
+      // CLEAN UP THE EFFECT
+      return () => socket.disconnect();
+    }
   }, [socket]);
 
 
@@ -71,6 +75,7 @@ export default function Display() {
     setVisibleStep={setVisibleStep}
     completedStep={completedStep}
     setCompletedStep={setCompletedStep}
+    socket={socket}
     />
   }
   return <RenderText props={response} />;
@@ -96,9 +101,6 @@ function RenderText({ props }) {
 }
 
 
-
-
-
 function RenderSequence({ 
   props,
   setProps,
@@ -116,6 +118,7 @@ function RenderSequence({
   setVisibleStep,
   completedStep,
   setCompletedStep,
+  socket,
 }) {
   const root = {
     flex:1,
