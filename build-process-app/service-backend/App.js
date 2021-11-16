@@ -25,9 +25,10 @@ main();
 
 //Calling main function in socketio-connection.js
 function main(){
-  /* var actionCompleted = new Set();
+  var action = {};
+  var actionCompleted = [];
   var activeStep = 0;
-  var completedStep = {}; */
+  var completedStep = {};
   var exchange = 'sequencer';
   key = 'buildp.all';
   key2 = 'buildp.report';
@@ -62,18 +63,21 @@ function main(){
               message = JSON.parse(msg.content);
               socket.emit("FromBPAll", message);
             }else if (msg.fields.routingKey == key2){
-              /* actionCompleted.add(JSON.parse(msg.content));
-              console.log("new actioncompleted : ", actionCompleted);
-              if(JSON.parse(msg.content)["id"] == message[activeStep][message[activeStep].length -1]["id"]){
+              action = JSON.parse(msg.content);
+              actionCompleted.push(action["id"]);
+              if(action["id"] == message[activeStep][message[activeStep].length -1]["id"]){
                 completedStep[activeStep]=true;
-                socket.emit("CompletedStep", activeStep);
+                console.log("step ", activeStep, "completed");
+                console.log("completedStep : ", completedStep);
+                socket.emit("CompletedStep", completedStep);
                 if(activeStep < message.length - 1){
-                  activeStep+=1;
+                  activeStep=activeStep+1;
+                  console.log("activestep : ", activeStep);
                   socket.emit("ActiveStep", activeStep);
                 }
               }
-              socket.emit("GetAction", actionCompleted); */
-              socket.emit("FromBPAdv", JSON.parse(msg.content));
+              socket.emit("GetAction", actionCompleted);
+              socket.emit("FromBPAdv", action);
             }
           }, {
             noAck: true
@@ -82,20 +86,21 @@ function main(){
           const socket = io.on("connection", (socket) => {
             console.log("Client is connected");
             socket.emit("FromBPAll", message);
+            socket.emit("GetAction", actionCompleted);
+            socket.emit("ActiveStep", activeStep);
+            socket.emit("CompletedStep", completedStep);
+            socket.emit("FromBPAdv", action);
+
             console.log("emitted");
 
             socket.on("Reset", (a) => {
-              /* actionCompleted.clear();
+              actionCompleted = [];
               completedStep = {};
               activeStep = 0;
-              console.log("action completed reset : ", actionCompleted); */
+              console.log("action completed reset : ", actionCompleted);
               message = "Attente de la Recette";
               socket.emit("FromBPAll", message);
               channel.publish(exchange, key3, Buffer.from("reset"));
-            });
-
-            socket.on("AskAction", (a) => {
-              //socket.emit("GetAction", actionCompleted);
             });
 
             

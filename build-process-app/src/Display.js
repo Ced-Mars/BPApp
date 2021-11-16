@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {List, ListItem, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton } from "@mui/material";
+import {List, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton } from "@mui/material";
 import "./Display.css";
 import socketIOClient from "socket.io-client";
 
@@ -14,11 +14,10 @@ export default function Display() {
   const [action, setAction] = useState("");
   const [statut, setStatut] = useState("");
   const [dansSeq, setDansSeq]= useState(true);
-  const [completedAction, setCompletedAction] = React.useState(new Set());
+  const [completedAction, setCompletedAction] = React.useState([]);
   const [activeStep, setActiveStep] = React.useState(0);
   const [visibleStep, setVisibleStep] = React.useState(0);
   const [completedStep, setCompletedStep] = React.useState({});
-
   
   useEffect(() => {
     socket.on("FromBPAll", (a) => {
@@ -28,16 +27,15 @@ export default function Display() {
       setAction(a["id"]);
       setStatut(a["status"]);
     });
-    /* socket.on("GetAction", (a) => {
-      console.log("dans socket getAction : ",a);
-      setCompletedAction(new Set(a));
+    socket.on("GetAction", (a) => {
+      setCompletedAction(a);
+    });
+    socket.on("CompletedStep", (a) => {
+      setCompletedStep(a);
     });
     socket.on("ActiveStep", (a) => {
       setActiveStep(a);
     });
-    socket.on("CompletedStep", (a) => {
-      setCompletedStep(a);
-    }); */
     // CLEAN UP THE EFFECT
     return () => socket.disconnect();
   }, [socket]);
@@ -106,7 +104,7 @@ function RenderSequence({
   visibleStep,
   setVisibleStep,
   completedStep,
-  setCompletedStep
+  setCompletedStep,
 }) {
   const root = {
     flex:1,
@@ -143,23 +141,8 @@ function RenderSequence({
     flex: 1
   };
 
-  // Gestion Actions
-  const handleCompleteAction = () => {
-    const newCompleted = new Set(completedAction);
-    newCompleted.add(action);
-    setCompletedAction(newCompleted);
-    if(props[activeStep][props[activeStep].length - 1]["id"] == action){
-      handleComplete();
-    }
-  };
-
   function isActionComplete(action) {
-    /* if(completedAction.size == 0 || completedAction == {}){
-      return false;
-    }else{
-      return completedAction.has(action);
-    } */
-    return completedAction.has(action);
+    return completedAction.includes(action);
   };
 
   //Gestion Steps
@@ -185,40 +168,11 @@ function RenderSequence({
     return completedSteps() === totalSteps();
   };
 
-  const isLastStep = () => {
-    return activeStep === totalSteps() - 1;
-  };
-
-  const handleNext = () => {
-    if(dansSeq == true){
-      const newActiveStep =
-        isLastStep()
-          ? activeStep
-          : activeStep + 1;
-      setActiveStep(newActiveStep);
-      setVisibleStep(newActiveStep);
-    }else{
-      const newActiveStep =
-        isLastStep()
-          ? activeStep
-          : activeStep + 1;
-      setActiveStep(newActiveStep);
-    }
-    
-  };
-
   const handleStep = (step) => () => {
     if(dansSeq == true){
       setDansSeq(false);
     }
     setVisibleStep(step);
-  };
-
-  const handleComplete = () => {
-    const newCompleted = completedStep;
-    newCompleted[activeStep] = true;
-    setCompletedStep(newCompleted);
-    handleNext();
   };
 
   //Reset everything
@@ -227,7 +181,7 @@ function RenderSequence({
     setVisibleStep(0);
     setCompletedStep({});
     setProps([]);
-    setCompletedAction(new Set());
+    setCompletedAction([]);
     setAction("");
     setStatut("");
     setDansSeq(true);
@@ -243,10 +197,13 @@ function RenderSequence({
   }
 
   useEffect(() => {
-    if(!isActionComplete(action)){
-      handleCompleteAction();
+    if(dansSeq == true){
+      setVisibleStep(activeStep);
     }
-  }, [action]);
+
+  }, [activeStep]);
+
+
 
   return (
       <div style={root}>
