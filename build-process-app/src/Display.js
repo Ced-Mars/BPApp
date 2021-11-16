@@ -41,7 +41,7 @@ export default function Display() {
       setActiveStep(0);
       setVisibleStep(0);
       setCompletedStep({});
-      setProps([]);
+      setResponse([]);
       setCompletedAction([]);
       setAction("");
       setStatut("");
