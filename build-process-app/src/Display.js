@@ -217,6 +217,10 @@ function RenderSequence({
 
   }, [activeStep]);
 
+  const handleOnWheel = () => {
+    setDansSeq(false);
+  };
+
 
 
   return (
@@ -238,7 +242,7 @@ function RenderSequence({
           })}
         </Stepper>
         
-        <div style={content}>
+        <div style={content} onWheel={handleOnWheel}>
           <List style={list}>
             {props[visibleStep]["stepStages"].map((value, i, arr) => {
               return(
