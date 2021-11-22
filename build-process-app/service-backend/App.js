@@ -29,10 +29,10 @@ function main(){
   var actionCompleted = [];
   var activeStep = 0;
   var completedStep = {};
-  var exchange = 'sequencer';
-  key = 'buildp.all';
-  key2 = 'buildp.report';
-  key3 = 'buildp.reset';
+  var exchange = 'mars';
+  key = 'sequencer.report.process.all';
+  key2 = 'sequencer.report.process.status';
+  key3 = 'hmi.process.reset';
   //Connexion to rabbitMQ server
   try {
     //Creating connection with rabbitMQ server
@@ -65,20 +65,29 @@ function main(){
               socket.emit("FromBPAll", message);
             }else if (msg.fields.routingKey == key2){
               action = JSON.parse(msg.content);
-              actionCompleted.push(action["id"]);
-              if(action["id"] == message[activeStep][message[activeStep].length -1]["id"]){
-                completedStep[activeStep]=true;
-                console.log("step ", activeStep, "completed");
-                console.log("completedStep : ", completedStep);
-                socket.emit("CompletedStep", completedStep);
-                if(activeStep < message.length - 1){
-                  activeStep=activeStep+1;
-                  console.log("activestep : ", activeStep);
-                  socket.emit("ActiveStep", activeStep);
+              console.log("action reçue",action);
+              if(action["id"] == 'begin' || action["id"] == 'end'){
+                console.log("reception notification début ou fin de séquence")
+              }else{
+                console.log("après action id check")
+                actionCompleted.push(action["id"]);
+                console.log("message", message);
+                console.log("message de activestep", message[activeStep]);
+                console.log("message de activestep de stepstages", message[activeStep]["stepStages"]);
+                if(action["id"] == message[activeStep]["stepStages"][message[activeStep]["stepStages"].length -1]["id"]){
+                  completedStep[activeStep]=true;
+                  console.log("step ", activeStep, "completed");
+                  console.log("completedStep : ", completedStep);
+                  socket.emit("CompletedStep", completedStep);
+                  if(activeStep < message.length - 1){
+                    activeStep=activeStep+1;
+                    console.log("activestep : ", activeStep);
+                    socket.emit("ActiveStep", activeStep);
+                  }
                 }
+                socket.emit("GetAction", actionCompleted);
+                socket.emit("FromBPAdv", action);
               }
-              socket.emit("GetAction", actionCompleted);
-              socket.emit("FromBPAdv", action);
             }else if (msg.fields.routingKey == key3){
               actionCompleted = [];
               completedStep = {};

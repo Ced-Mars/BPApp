@@ -164,7 +164,7 @@ function RenderSequence({
     return props.length;
   };
 
-  //return an array of string representing each step id and "End" string
+  //return an array of string representing each step id
   function getSteps(props) {
     var array = [];
     props.map((value, index) => {
@@ -240,7 +240,7 @@ function RenderSequence({
         
         <div style={content}>
           <List style={list}>
-            {props[visibleStep].map((value, i, arr) => {
+            {props[visibleStep]["stepStages"].map((value, i, arr) => {
               return(
                   <ListItemButton key={value["id"]} style={isActionComplete(value["id"]) ? {flex:1, backgroundColor:"lightgreen"} : {flex:1}} autoFocus={dansSeq ? value["id"]==action ? true : false : false}> 
                     <ListItemText primary={value["description"]}>
