@@ -5,10 +5,9 @@ const index = require("./routes/index.js");
 
 const port = process.env.PORT || 4001;
 const app = express();
-app.use(index);
+app.use(express.static("dist"));
 const server = http.createServer(app);
 
-app.use(express.static("dist"));
 //Global variables where are stored informations about the messaging server and the channel
 var message = "Attente de la Recette";
 const server_path = "amqp://localhost";
@@ -67,13 +66,10 @@ function main(){
               action = JSON.parse(msg.content);
               console.log("action reçue",action);
               if(action["id"] == 'begin' || action["id"] == 'end'){
-                console.log("reception notification début ou fin de séquence")
+                console.log("reception notification début ou fin de séquence");
               }else{
-                console.log("après action id check")
                 actionCompleted.push(action["id"]);
-                console.log("message", message);
-                console.log("message de activestep", message[activeStep]);
-                console.log("message de activestep de stepstages", message[activeStep]["stepStages"]);
+                console.log("completed action", message);
                 if(action["id"] == message[activeStep]["stepStages"][message[activeStep]["stepStages"].length -1]["id"]){
                   completedStep[activeStep]=true;
                   console.log("step ", activeStep, "completed");
