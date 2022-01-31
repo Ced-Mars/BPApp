@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {List, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton } from "@mui/material";
+import {List, ListItem, ListItemText, Stepper, Step, StepButton, Button, Typography, CircularProgress, StepLabel, ListItemButton, Card } from "@mui/material";
 import "./Display.css";
 import io from "socket.io-client";
 
@@ -10,19 +10,19 @@ export default function Display() {
   const [response, setResponse] = useState([]);
   const [action, setAction] = useState("");
   const [statut, setStatut] = useState("");
-  const [dansSeq, setDansSeq]= useState(true);
-  const [completedAction, setCompletedAction] = React.useState([]);
   const [activeStep, setActiveStep] = React.useState(0);
-  const [visibleStep, setVisibleStep] = React.useState(0);
-  const [completedStep, setCompletedStep] = React.useState({});
+  const [end, setEnd] = React.useState(false);
 
   useEffect(() => {
-    setSocket(io(ENDPOINT));
+    setSocket(io(ENDPOINT, {transports : ['websocket']}));
     return () => io(ENDPOINT).close();
   }, []);
   
   useEffect(() => {
     if(socket){
+      socket.on("connect", () => {
+        console.log("connected");
+      });
       socket.on("FromBPAll", (a) => {
         console.log("réponse reçue", a);
         setResponse(a);
@@ -31,24 +31,14 @@ export default function Display() {
         setAction(a["id"]);
         setStatut(a["status"]);
       });
-      socket.on("GetAction", (a) => {
-        setCompletedAction(a);
-      });
-      socket.on("CompletedStep", (a) => {
-        setCompletedStep(a);
-      });
       socket.on("ActiveStep", (a) => {
         setActiveStep(a);
       });
       socket.on("ResetFromBackend", (a) => {
         setActiveStep(0);
-        setVisibleStep(0);
-        setCompletedStep({});
         setResponse([]);
-        setCompletedAction([]);
         setAction("");
         setStatut("");
-        setDansSeq(true);
       });
       // CLEAN UP THE EFFECT
       return () => socket.disconnect();
@@ -57,7 +47,7 @@ export default function Display() {
 
 
   
-  if (response && response.length!==0 && response!== "Attente de la Recette") {
+  if (response && response.length!==0) {
     return <RenderSequence 
     props={response} 
     setProps={setResponse}
@@ -65,25 +55,19 @@ export default function Display() {
     setAction={setAction}
     statut={statut} 
     setStatut={setStatut}
-    dansSeq={dansSeq}
-    setDansSeq={setDansSeq}
-    completedAction={completedAction} 
-    setCompletedAction={setCompletedAction}
     activeStep={activeStep}
     setActiveStep={setActiveStep}
-    visibleStep={visibleStep}
-    setVisibleStep={setVisibleStep}
-    completedStep={completedStep}
-    setCompletedStep={setCompletedStep}
+    end={end}
+    setEnd={setEnd}
     socket={socket}
     />
   }
-  return <RenderText props={response} />;
+  return <RenderText />;
   
 }
 
 
-function RenderText({ props }) {
+function RenderText() {
   const divStyle = {
     color: "blue",
     flex: 1,
@@ -94,7 +78,7 @@ function RenderText({ props }) {
   return (
     <div style={divStyle}>
       <CircularProgress />
-      <p>{props}</p>
+      <p>En attente de la recette</p>
     </div>
     
   );
@@ -108,16 +92,10 @@ function RenderSequence({
   setAction,
   statut,
   setStatut,
-  dansSeq,
-  setDansSeq,
-  completedAction, 
-  setCompletedAction,
   activeStep,
   setActiveStep,
-  visibleStep,
-  setVisibleStep,
-  completedStep,
-  setCompletedStep,
+  end,
+  setEnd,
   socket,
 }) {
   const root = {
@@ -145,6 +123,13 @@ function RenderSequence({
     margin:"5px",
     padding:"5px"
   };
+  const cardlistitems = {
+    flex:1,
+    marginTop:"3px"
+  };
+  const listitems = {
+    flex:1,
+  };
   const stepper = {
     flex: "1 0 auto"
   };
@@ -155,108 +140,38 @@ function RenderSequence({
     flex: 1
   };
 
-  function isActionComplete(action) {
-    return completedAction.includes(action);
-  };
-
-  //Gestion Steps
-  const totalSteps = () => {
-    return props.length;
-  };
-
-  //return an array of string representing each step id
-  function getSteps(props) {
-    var array = [];
-    props.map((value, index) => {
-      array = [...array, index+1];
-    })
-
-    return array;
-  }
-
-  const completedSteps = () => {
-    return Object.keys(completedStep).length;
-  };
-
-  const allStepsCompleted = () => {
-    return completedSteps() === totalSteps();
-  };
-
-  const handleStep = (step) => () => {
-    if(dansSeq == true){
-      setDansSeq(false);
-    }
-    setVisibleStep(step);
-  };
-
   //Reset everything
   const handleReset = () => {
     setActiveStep(0);
-    setVisibleStep(0);
-    setCompletedStep({});
     setProps([]);
-    setCompletedAction([]);
     setAction("");
     setStatut("");
-    setDansSeq(true);
+    setEnd(false);
     socket.emit("ResetFromClient", "reset");
   };
-
-  //Get back to the active (working) step
-  const handleFollow = () => {
-    setVisibleStep(activeStep);
-    if(dansSeq == false){
-      setDansSeq(true);
-    }
-  }
-
-  useEffect(() => {
-    if(dansSeq == true){
-      setVisibleStep(activeStep);
-    }
-
-  }, [activeStep]);
-
-  const handleOnWheel = () => {
-    setDansSeq(false);
-  };
-
 
 
   return (
       <div style={root}>
-        <Stepper alternativeLabel nonLinear activeStep={visibleStep}>
-          {getSteps(props).map((label, index) => {
-            return (
-              <Step key={index} completed={completedStep[index]}>
-                <StepButton
-                  focusRipple={true}
-                  onClick={handleStep(index)}
-                >
-                  <StepLabel>
-                    {label}
-                  </StepLabel>
-                </StepButton>
-              </Step>
-            );
-          })}
-        </Stepper>
-        
-        <div style={content} onWheel={handleOnWheel}>
+        <div style={content}>
           <List style={list}>
-            {props[visibleStep]["stepStages"].map((value, i, arr) => {
+            {props.map((value, i, arr) => {
               return(
-                  <ListItemButton key={value["id"]} style={isActionComplete(value["id"]) ? {flex:1, backgroundColor:"lightgreen"} : {flex:1}} autoFocus={dansSeq ? value["id"]==action ? true : false : false}> 
-                    <ListItemText primary={value["description"]}>
+                <Card style={cardlistitems}>
+                  <ListItem key={i} style={listitems}> 
+                    <ListItemText primary={`${value["target"]} Action`} style={listitems}>
                     </ListItemText>
-                  </ListItemButton>
+                      <div style={listitems}> / {value["stepStages"].length}</div>
+                      <div style={listitems}>{value["status"]}</div>
+                  </ListItem>
+                </Card>
               );
             })}
           </List>
           
         </div>
 
-          {allStepsCompleted() ? (
+          {end ? (
             <div style={footer}>
               <Typography style={instructions}>
                 Process has ended, you can reset it or launch a new process.
@@ -268,7 +183,6 @@ function RenderSequence({
               <Typography style={instructions}>
                 Action en cours : {action} - Statut : {statut}
               </Typography>
-              {dansSeq ? null : <Button onClick={handleFollow} style={footerReset}>Reprendre la séquence en cours</Button>}
               
             </div>
           }

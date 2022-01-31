@@ -9,7 +9,8 @@ app.use(express.static("dist"));
 const server = http.createServer(app);
 
 //Global variables where are stored informations about the messaging server and the channel
-var message = "Attente de la Recette";
+var message = [];
+var percentage = 0;
 const server_path = "amqp://localhost";
 
 //Pass the Cross Origin error, do not deploy
@@ -25,9 +26,9 @@ main();
 //Calling main function in socketio-connection.js
 function main(){
   var action = {};
-  var actionCompleted = [];
   var activeStep = 0;
-  var completedStep = {};
+  var newStepStages = [];
+  var stages = [];
   var exchange = 'mars';
   key = 'sequencer.report.process.all';
   key2 = 'sequencer.report.process.status';
@@ -60,37 +61,54 @@ function main(){
           channel.consume(q.queue, function(msg) {
             // Emitting a new message. Will be consumed by the client
             if(msg.fields.routingKey == key){
+              //parse the full build process received from the sequencer over the rabbitMQ server on sequencer.report.process.all
               message = JSON.parse(msg.content);
-              socket.emit("FromBPAll", message);
-            }else if (msg.fields.routingKey == key2){
-              action = JSON.parse(msg.content);
-              console.log("action reçue",action);
-              if(action["id"] == 'begin' || action["id"] == 'end'){
-                console.log("reception notification début ou fin de séquence");
-              }else{
-                actionCompleted.push(action["id"]);
-                console.log("completed action", message);
-                if(action["id"] == message[activeStep]["stepStages"][message[activeStep]["stepStages"].length -1]["id"]){
-                  completedStep[activeStep]=true;
-                  console.log("step ", activeStep, "completed");
-                  console.log("completedStep : ", completedStep);
-                  socket.emit("CompletedStep", completedStep);
-                  if(activeStep < message.length - 1){
-                    activeStep=activeStep+1;
-                    console.log("activestep : ", activeStep);
-                    socket.emit("ActiveStep", activeStep);
+              //modifying the build process to match the data we need on the client side
+              message.map((value, i, arr) => {
+                value.status="WAITING";
+                value.total=value.stepStages.length;
+                console.log("total", value);
+                value["stepStages"].map((v) => {
+                  v.status="WAITING";
+                  if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.ARM.APPROACH" || v.type == "MOVE.ARM.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN"){
+                    stages.push(v);
+                  }else{
+                    stages.push(v);
+                    newStepStages[newStepStages.push([]) - 1].push(...stages);
+                    stages.length = 0;
                   }
+                });
+                value.stepStages.length = 0;
+                value.stepStages.push(...newStepStages);
+                newStepStages.length = 0;
+              });
+              //emit the build process via socketio to all client in room FromBPAll
+              socket.emit("FromBPAll", message);
+              console.log("message modified : ", message);
+            }else if (msg.fields.routingKey == key2){ // Receiving the status of the action in progress
+              action = JSON.parse(msg.content); // Parse the message
+              console.log("action reçue",action);
+              if(action.id == 'begin' || action.id == 'end'){ // Check if beginning/end of sequence
+                console.log("reception notification début ou fin de séquence");
+                socket.emit("InfoSeq", action.id);
+              }else{
+                //Change status to "SUCCESS" for the received action
+                checkAction(message, action, socket, percentage);
+                //Change activeStep if status has been changed for the current step
+                if(message[activeStep].status == "SUCCESS" && activeStep < message.length){
+                  activeStep++;
+                  socket.emit("Percentage", 0);
+                  percentage = 0;
+                  console.log("activestep : ", activeStep);
+                  socket.emit("FromBPAll", message);
+                  socket.emit("ActiveStep", activeStep);
                 }
-                socket.emit("GetAction", actionCompleted);
                 socket.emit("FromBPAdv", action);
               }
             }else if (msg.fields.routingKey == key3){
-              actionCompleted = [];
-              completedStep = {};
               activeStep = 0;
               socket.emit("ResetFromBackend", "reset");
-              message = "Attente de la Recette";
-              socket.emit("FromBPAll", message);
+              message = [];
             }
           }, {
             noAck: true
@@ -99,24 +117,16 @@ function main(){
           const socket = io.on("connection", (socket) => {
             console.log("Client is connected");
             socket.emit("FromBPAll", message);
-            socket.emit("GetAction", actionCompleted);
             socket.emit("ActiveStep", activeStep);
-            socket.emit("CompletedStep", completedStep);
             socket.emit("FromBPAdv", action);
 
-            console.log("emitted");
-
             socket.on("ResetFromClient", (a) => {
-              actionCompleted = [];
-              completedStep = {};
               activeStep = 0;
-              console.log("action completed reset : ", actionCompleted);
               message = "Attente de la Recette";
               socket.emit("FromBPAll", message);
               channel.publish(exchange, key3, Buffer.from("reset"));
             });
 
-            
             //Called when the client disconnect from the socketio link
             socket.on("disconnect", () => {
               console.log("Client disconnected");
@@ -132,3 +142,21 @@ function main(){
   server.listen(port, () => console.log(`Listening on port ${port}`));
 }
 
+function checkAction(array, action, socket){
+  for (const [key, value] of Object.entries(array)) { //loop through the array of objects and get key - value pair
+    if(value.status != "SUCCESS"){
+      for (const v of value.stepStages) { // Loop through an array of arrays
+        for (const [key1, value1] of Object.entries(v)) {  //loop through an array of objects and get key1 - value pair
+          if(action.id == value1.id){
+            if(value.stepStages.indexOf(v) == (value.stepStages.length - 1)){
+              value.status = "SUCCESS";
+            }
+            percentage+=1/value.total;
+            socket.emit("Percentage", percentage);
+            return value1.status = "SUCCESS";
+          }
+        }
+      }
+    }
+  }
+}
