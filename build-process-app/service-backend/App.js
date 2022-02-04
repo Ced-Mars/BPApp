@@ -29,6 +29,7 @@ function main(){
   var activeStep = 0;
   var newStepStages = [];
   var stages = [];
+  var newUserArray = [];
   var exchange = 'mars';
   key = 'sequencer.report.process.all';
   key2 = 'sequencer.report.process.status';
@@ -63,18 +64,45 @@ function main(){
             if(msg.fields.routingKey == key){
               //parse the full build process received from the sequencer over the rabbitMQ server on sequencer.report.process.all
               message = JSON.parse(msg.content);
-              //modifying the build process to match the data we need on the client side
+              //modifying the build process to match the data we need on the client side - User objects only
+              message.map((value, i, arr) => {
+                if(value.stepStages.length > 1){
+                  if(value.target == "USER"){
+                    value["stepStages"].map((v) => {
+                      newUserArray.push({
+                        "stepStages":[v],
+                        "target":"USER"
+                      });
+                    });
+                    newUserArray.map((v1, j) => {
+                      if(j == 0){
+                        message.splice(i, 1, v1);
+                      }else{
+                        message.splice(i+1, 0, v1);
+                      }
+                    });
+                    newUserArray.length = 0;
+                  }
+                }
+              });
+              console.log("modified users target objects in received array : ", message);
+              
+              //modifying the build process to match the data we need on the client side - Stepstages arrays only
               message.map((value, i, arr) => {
                 value.status="WAITING";
                 value.total=value.stepStages.length;
-                console.log("total", value);
+                value.duration = value.total*3;
                 value["stepStages"].map((v) => {
                   v.status="WAITING";
                   if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.ARM.APPROACH" || v.type == "MOVE.ARM.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN"){
                     stages.push(v);
                   }else{
                     stages.push(v);
-                    newStepStages[newStepStages.push([]) - 1].push(...stages);
+                    if(stages.length == 1){
+                      newStepStages.push(...stages);
+                    }else{
+                      newStepStages[newStepStages.push([]) - 1].push(...stages);
+                    }
                     stages.length = 0;
                   }
                 });
@@ -84,7 +112,7 @@ function main(){
               });
               //emit the build process via socketio to all client in room FromBPAll
               socket.emit("FromBPAll", message);
-              console.log("message modified : ", message);
+              console.log("modifed stepstages in each Robot sequences to push into an array each actions between  : ", message);
             }else if (msg.fields.routingKey == key2){ // Receiving the status of the action in progress
               action = JSON.parse(msg.content); // Parse the message
               console.log("action reçue",action);
@@ -145,10 +173,21 @@ function main(){
 function checkAction(array, action, socket){
   for (const [key, value] of Object.entries(array)) { //loop through the array of objects and get key - value pair
     if(value.status != "SUCCESS"){
-      for (const v of value.stepStages) { // Loop through an array of arrays
-        for (const [key1, value1] of Object.entries(v)) {  //loop through an array of objects and get key1 - value pair
+      for (const [key1, value1] of Object.entries(value.stepStages)) { // Loop through an array of arrays
+        if(Array.isArray(value1)){
+          for (const [key2, value2] of Object.entries(value1)) {  //loop through an array of objects and get key1 - value pair
+            if(action.id == value2.id){
+              if(value.stepStages.indexOf(value1) == (value.stepStages.length - 1)){
+                value.status = "SUCCESS";
+              }
+              percentage+=1/value.total;
+              socket.emit("Percentage", percentage);
+              return value1.status = "SUCCESS";
+            }
+          }
+        }else{
           if(action.id == value1.id){
-            if(value.stepStages.indexOf(v) == (value.stepStages.length - 1)){
+            if(value.stepStages.indexOf(value1) == (value.stepStages.length - 1)){
               value.status = "SUCCESS";
             }
             percentage+=1/value.total;
@@ -156,7 +195,10 @@ function checkAction(array, action, socket){
             return value1.status = "SUCCESS";
           }
         }
+        
+
       }
+
     }
   }
 }

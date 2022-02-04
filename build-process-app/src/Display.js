@@ -12,6 +12,7 @@ export default function Display() {
   const [statut, setStatut] = useState("");
   const [activeStep, setActiveStep] = React.useState(0);
   const [end, setEnd] = React.useState(false);
+  const [percentage, setPercentage] = React.useState(0);
 
   useEffect(() => {
     setSocket(io(ENDPOINT, {transports : ['websocket']}));
@@ -40,6 +41,9 @@ export default function Display() {
         setAction("");
         setStatut("");
       });
+      socket.on("Percentage", (a) => {
+        setPercentage((a*100).toFixed(0));
+      });
       // CLEAN UP THE EFFECT
       return () => socket.disconnect();
     }
@@ -60,6 +64,7 @@ export default function Display() {
     end={end}
     setEnd={setEnd}
     socket={socket}
+    percentage={percentage}
     />
   }
   return <RenderText />;
@@ -97,6 +102,7 @@ function RenderSequence({
   end,
   setEnd,
   socket,
+  percentage
 }) {
   const root = {
     flex:1,
@@ -121,11 +127,11 @@ function RenderSequence({
     flexDirection:"column",
     overflow:"auto",
     margin:"5px",
-    padding:"5px"
+    padding:"5px",
   };
   const cardlistitems = {
     flex:1,
-    marginTop:"3px"
+    marginTop:"3px",
   };
   const listitems = {
     flex:1,
@@ -157,11 +163,11 @@ function RenderSequence({
           <List style={list}>
             {props.map((value, i, arr) => {
               return(
-                <Card style={cardlistitems}>
+                <Card style={{flex:1, marginTop:"3px", backgroundColor: i == activeStep ? 'lightblue' : value.status == "SUCCESS" ? 'lightgreen' : 'lightgrey'}}>
                   <ListItem key={i} style={listitems}> 
                     <ListItemText primary={`${value["target"]} Action`} style={listitems}>
                     </ListItemText>
-                      <div style={listitems}> / {value["stepStages"].length}</div>
+                      {value.target == "USER" ? i == activeStep ? <div style={listitems}><Button>Valider</Button> </div> : <div style={listitems}></div> : i == activeStep ? <div style={listitems}>{percentage} %</div> : <div style={listitems}></div> }
                       <div style={listitems}>{value["status"]}</div>
                   </ListItem>
                 </Card>
