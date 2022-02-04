@@ -116,9 +116,14 @@ function main(){
             }else if (msg.fields.routingKey == key2){ // Receiving the status of the action in progress
               action = JSON.parse(msg.content); // Parse the message
               console.log("action reçue",action);
-              if(action.id == 'begin' || action.id == 'end'){ // Check if beginning/end of sequence
-                console.log("reception notification début ou fin de séquence");
-                socket.emit("InfoSeq", action.id);
+              if(action.id == 'begin' || action.id == 'end' || action.id == 'home'){ // Check if beginning/end of sequence
+                if(action.id == 'home'){
+                  console.log("Going home position");
+                }else{
+                  console.log("reception notification début ou fin de séquence");
+                  socket.emit("InfoSeq", action.id);
+                }
+                
               }else{
                 //Change status to "SUCCESS" for the received action
                 checkAction(message, action, socket, percentage);
