@@ -1,5 +1,5 @@
 import React from "react";
-import Display from "./Display";
+import Display from "./display/Display";
 
 const App = () => {
     return(
