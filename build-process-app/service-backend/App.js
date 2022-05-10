@@ -101,7 +101,7 @@ function main(){
               message.map((value, i, arr) => {
                 value.status="WAITING";
                 value.total=value.stepStages.length;
-                value.duration = value.total*3;
+                value.duration = value.total;
                 value["stepStages"].map((v) => {
                   v.status="WAITING";
                   if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.ARM.APPROACH" || v.type == "MOVE.ARM.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN"){
