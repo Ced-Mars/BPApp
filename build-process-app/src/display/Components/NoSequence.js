@@ -1,6 +1,5 @@
 import React from "react";
 import { CircularProgress } from "@mui/material";
-import "./Display.css";
 
 
 export default function RenderText() {

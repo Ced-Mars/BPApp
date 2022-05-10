@@ -1,6 +1,5 @@
 import React from "react";
 import {List, ListItem, ListItemText, Button, Typography, Card } from "@mui/material";
-import "./Display.css";
 
 export default function RenderSequence({ 
     props,

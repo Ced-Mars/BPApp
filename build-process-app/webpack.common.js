@@ -39,7 +39,7 @@ module.exports = {
       name: 'RemoteBP', // this name needs to match with the entry name
       filename: "remoteEntry.js",
       exposes:{
-        "./BPApp": "./src/Display"
+        "./BPApp": "./src/display/Display"
       },
       shared: {
         ...deps

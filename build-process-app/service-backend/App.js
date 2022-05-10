@@ -26,6 +26,8 @@ main();
 //Calling main function in socketio-connection.js
 function main(){
   var action = {};
+  var nextaction = {};
+  var weardata = {}; //{"current":STRING, "next":STRING, "time":INT}
   var activeStep = 0;
   var newStepStages = [];
   var stages = [];
@@ -34,6 +36,14 @@ function main(){
   key = 'sequencer.report.process.all';
   key2 = 'sequencer.report.process.status';
   key3 = 'hmi.process.reset';
+  const count_path = "/count";
+  const count_key = "count_key";
+  const action_path = "/action";
+  const action_key = "action_key";
+  const sequence_path = "/sequence";
+  const sequence_key = "sequence_key";
+  const alerte_path = "/alerte";
+  const alerte_key = "alerte_key";
   //Connexion to rabbitMQ server
   try {
     //Creating connection with rabbitMQ server
@@ -130,11 +140,40 @@ function main(){
                 //Change activeStep if status has been changed for the current step
                 if(message[activeStep].status == "SUCCESS" && activeStep < message.length){
                   activeStep++;
-                  socket.emit("Percentage", 0);
                   percentage = 0;
+                  socket.emit("Percentage", percentage);
                   console.log("activestep : ", activeStep);
+                  //Renvoyer la totalité du build process pour update -- à modifier
                   socket.emit("FromBPAll", message);
+                  //Envoyer le numéro du step en cours
                   socket.emit("ActiveStep", activeStep);
+                
+                  if(activeStep+1 < message.length){
+                    if(message[activeStep].target == "ROBOT"){
+                      //Envoyer la prochaine action Robot
+                      weardata.current = message[activeStep].target;
+                      weardata.next = message[activeStep+1].target;
+                      weardata.time = message[activeStep].duration;
+                      socket.emit("ProchaineAction", weardata, action_path, action_key);
+                    }else if (message[activeStep].target == "USER"){
+                      //Envoyer la prochaine action USER
+                      weardata.current = message[activeStep].stepStages[0].type;
+                      if(message[activeStep+1].target == "USER"){
+                        weardata.next = message[activeStep+1].stepStages[0].type;
+                      }else{
+                        weardata.next = message[activeStep+1].target;
+                      }
+                      weardata.time = 0;
+                      socket.emit("TempsAction", weardata, count_path, count_key);
+                    }else{
+                      console.log("Not in USER or ROBOT target - didn't send info about next action");
+                    }
+                  }else{
+                    weardata.current = "Fin de séquence";
+                    weardata.next = "";
+                    weardata.time = 0;
+                    socket.emit("ProchaineAction", weardata , sequence_path, sequence_key);
+                  }
                 }
                 socket.emit("FromBPAdv", action);
               }

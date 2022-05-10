@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./Display.css";
 import io from "socket.io-client";
-import { RenderSequence, RenderText } from "./Components"
+import RenderSequence from "./Components/Sequence"
+import RenderText from "./Components/NoSequence"
 
 //Fonctionnement avec socket
 export default function Display() {
