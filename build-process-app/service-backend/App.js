@@ -148,7 +148,8 @@ function main(){
                   //Envoyer le numéro du step en cours
                   socket.emit("ActiveStep", activeStep);
                 
-                  if(activeStep+1 < message.length){
+                  if(activeStep < message.length){
+                    console.log("TARGET :" + message[activeStep].target);
                     if(message[activeStep].target == "ROBOT"){
                       //Envoyer la prochaine action Robot
                       weardata.current = message[activeStep].target;
@@ -158,10 +159,14 @@ function main(){
                     }else if (message[activeStep].target == "USER"){
                       //Envoyer la prochaine action USER
                       weardata.current = message[activeStep].stepStages[0].type;
-                      if(message[activeStep+1].target == "USER"){
-                        weardata.next = message[activeStep+1].stepStages[0].type;
+                      if(activeStep+1 >= message.length){
+                        weardata.next = "";
                       }else{
-                        weardata.next = message[activeStep+1].target;
+                        if(message[activeStep+1].target == "USER"){
+                          weardata.next = message[activeStep+1].stepStages[0].type;
+                        }else{
+                          weardata.next = message[activeStep+1].target;
+                        }
                       }
                       weardata.time = 0;
                       socket.emit("TempsAction", weardata, count_path, count_key);
