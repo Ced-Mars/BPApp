@@ -45,6 +45,7 @@ module.exports = {
         ...deps
       },
     }),
+    //Generate file index.html in ./public file (containing static js files of our app)
     new HtmlWebpackPlugin({
       title: 'Production-BPApp',
       template: './public/index.html'

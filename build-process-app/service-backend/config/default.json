@@ -1,0 +1,20 @@
+{
+    "server": {
+        "host" : "localhost",
+        "port" : 4001
+    },
+    "rabbitMq": {
+        "url": "amqp://localhost",
+        "exchange": "mars"
+    },
+    "mongoDB": {
+        "url": "mongodb://localhost:27017"
+    },
+    "rabbitMQRouting": {
+        "opts":[
+            { "header":{ "publisher" : "sequencer", "path" : "/buildProcess/all", "x-match": "all" }, "routing_key":"sequencer.report"}, 
+            { "header":{ "publisher" : "sequencer", "path" : "/buildProcess/status", "x-match": "all" }, "routing_key":"sequencer.report"}, 
+            { "header":{ "publisher" : "sequencerHMI", "path" : "/hmi/reset", "x-match": "all" }, "routing_key":"hmi.update"}
+        ]
+    }
+}
