@@ -5,31 +5,40 @@ function checkAction(array, action, socket, percentage, addToDB){
   const TAG = "FUNCTION checkAction: ";
   for (const [i, value] of Object.entries(array)) { //loop through the array of objects and get key - value pair
     if(value.status != "SUCCESS"){
+
       for (const [j, value1] of Object.entries(value.stepStages)) { // Loop through an array of arrays
+
+        //Si tableau, correspond à un tableau work
         if(Array.isArray(value1)){
           for (const [k, value2] of Object.entries(value1)) {  //loop through an array of objects and get key1 - value pair
             if(action.uid == value2.uid){
-              if(value.stepStages.indexOf(value1) == (value.stepStages.length - 1)){
-                value.status = "SUCCESS";
+              if(value.stepStages.indexOf(value1) == (value.stepStages.length - 1 && action.status == "SUCCESS")){
+                value.status = action.status;
               }
-              percentage+=(1/value.total);
-              addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: percentage }}, {upsert: true});
-              socket.emit("Percentage", percentage);
-              return value1.status = "SUCCESS";
+              if(action.status == "SUCCESS"){
+                percentage+=(1/value.total);
+                addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: percentage }}, {upsert: true});
+                socket.emit("Percentage", percentage);
+              }
+              return value1.status = action.status;
             }
           }
         }else{
           if(action.uid == value1.uid){
             if(value.stepStages.indexOf(value1) == (value.stepStages.length - 1)){
-              value.status = "SUCCESS";
-              addToDB(array, "MARS", "buildprocess", {processus_target: "MARS_1"}, { $set: { data: array }}, {upsert: true});
-              addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: 0 }}, {upsert: true});
-              return value1.status = "SUCCESS";
+              if(action.status == "SUCCESS"){
+                value.status = action.status;
+                addToDB(array, "MARS", "buildprocess", {processus_target: "MARS_1"}, { $set: { data: array }}, {upsert: true});
+                addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: 0 }}, {upsert: true});
+              }
+              return value1.status = action.status;
             }else{
-              percentage+=(1/value.total);
-              addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: percentage }}, {upsert: true});
-              socket.emit("Percentage", percentage);
-              return value1.status = "SUCCESS";
+              if(action.status == "SUCCESS"){
+                percentage+=(1/value.total);
+                addToDB(percentage, "MARS", "process", {target: "MARS_1"}, { $set: { percentage: percentage }}, {upsert: true});
+                socket.emit("Percentage", percentage);
+              }
+              return value1.status = action.status;
             }
           }
         }
@@ -83,7 +92,7 @@ function changingStepStages(message){
     value.duration = 3*value.total;
     value["stepStages"].map((v) => {
       v.status="WAITING";
-      if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.ARM.APPROACH" || v.type == "MOVE.ARM.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN"){
+      if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.TCP.APPROACH" || v.type == "MOVE.TCP.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN" || v.type == "WORK.PROBE"){
         stages.push(v);
       }else{
         stages.push(v);
@@ -124,6 +133,15 @@ function UpdateArrayUserElementsV2(message, callback){
       );
     }else if(value.assets.some(e => e.uid === "mars")){
       tempArray.push(value);
+      if(i == arr.length-1){
+        newArray.push(
+          {
+            "stepStages": [...tempArray],
+            "target": "ROBOT"
+          }
+        );
+        tempArray.length = 0;
+      }
     }else{
       console.error("One action has unknown asset(s)");
     }
@@ -139,7 +157,7 @@ function updateArraySequenceElementsV2(message){
   message.map((value, i, arr) => {
     value.status="WAITING";
     value.total=value.stepStages.length;
-    value.duration = value.total*3;
+    value.duration = value.total;
     value["stepStages"].map((v) => {
       v.status="WAITING";
       if(v.type == "MOVE.STATION.WORK" || v.type == "MOVE.ARM.APPROACH" || v.type == "MOVE.ARM.WORK" || v.type == "WORK.DRILL" || v.type == "WORK.FASTEN"){

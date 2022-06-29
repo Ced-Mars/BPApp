@@ -24,7 +24,7 @@ async function rabbitmq_consumers(RABBITMQ_URL, exchange, opts)
           //Asserting in which channel and queue and which message/key pair we want to get
           bindingQueues(ch, q, exchange, opts);
           //Consume messages that has the same routing key defined in the binding
-          ch.consume(q.queue, (data) => handleRoutingServerData(data), {noAck: true});
+          ch.consume(q.queue, (data) => handleRoutingServerData(data, exchange, ch), {noAck: true});
           //Logging that RabbitMQ server is running and listening for messgaes
           console.log(FILE + TAG + ' RabbitMQ consummer running / Waiting for messages / To exit press CTRL+C');
         });

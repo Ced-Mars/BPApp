@@ -13,6 +13,6 @@ app.get("/connexion", function (req, res) {
 //health check route
 app.get('/_health', (req, res) => {
   res.status(200).send('ok')
-})
+});
 
 module.exports = {app, server};

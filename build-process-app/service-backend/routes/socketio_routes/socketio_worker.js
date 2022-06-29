@@ -1,11 +1,13 @@
 'use-strict'
+import myPromise from "../../models/getFromDB";
 
 function socketDefinition(io){
   return io.on("connection", (socket) => {
+
     console.log("Client is connected - sending data");
-    //socket.emit("FromBPAll", message);
-    //socket.emit("ActiveStep", activeStep);
-    //socket.emit("FromBPAdv", action);
+
+    //socket.emit("FromBPAll", build_process.data);
+    //socket.emit("ActiveStep", process.activeStep);
     socket.on("ResetFromClient", (a) => {
       //activeStep = 0;
       //message = "Attente de la Recette";

@@ -49,26 +49,33 @@ function parsingreceivedAction(data){
 function inSequenceProcess(socket, action, build_process, percentage, activeStep){
   const TAG = "FUNCTION inSequenceProcess: ";
 
-  //TODO : get percentage and build process from db
-  //Change status to "SUCCESS" for the received action or updating end of a sequence
-  checkAction(build_process, action, socket, percentage, addToDB);
+  if(action.status == "SUCCESS" || action.status == "WAITING" || action.status == "ERROR"){
+    checkAction(build_process, action, socket, percentage, addToDB);
+  }else{
+    console.log(FILE + TAG, "Action status not recongnized");
+  }
 
   //Change activeStep if status has been changed for the current step
-  if(build_process != 'undefined' && build_process[activeStep].status == "SUCCESS" && activeStep < build_process.length){
-    activeStep++;
-    addToDB(activeStep, "MARS", "process", {target: "MARS_1"}, { $set: { activeStep: activeStep }}, {upsert: true});
-    console.log(FILE + TAG + "activestep : ", activeStep);
-    //Renvoyer la totalité du build process pour update
-    //TODO: Ne pas renvoyer le Build Process à chaque update, faire un update directement sur le frontend
-    socket.emit("FromBPAll", build_process);
-    //Envoyer le numéro du step en cours
-    socket.emit("ActiveStep", activeStep);
-    //Envoyer le pourcentage de la séquence en cours
-    socket.emit("Percentage", percentage);
-  
-    //Function called to populate and send data that will be send to the phone to be send and used by the wear app via the dataLayerApi
-    handleWearAppData(activeStep, build_process, socket);
+  if(activeStep < build_process.length){
+    if(build_process != 'undefined' && build_process[activeStep].status == "SUCCESS"){
+      activeStep++;
+      addToDB(activeStep, "MARS", "process", {target: "MARS_1"}, { $set: { activeStep: activeStep }}, {upsert: true});
+      console.log(FILE + TAG + "activestep : ", activeStep);
+      //Renvoyer la totalité du build process pour update
+      //TODO: Ne pas renvoyer le Build Process à chaque update, faire un update directement sur le frontend
+      socket.emit("FromBPAll", build_process);
+      //Envoyer le numéro du step en cours
+      socket.emit("ActiveStep", activeStep);
+      //Envoyer le pourcentage de la séquence en cours
+      socket.emit("Percentage", percentage);
+    
+      //Function called to populate and send data that will be send to the phone to be send and used by the wear app via the dataLayerApi
+      handleWearAppData(activeStep, build_process, socket);
+    }
+  }else{
+    console.log(FILE + TAG, "active step exceed build process size !");
   }
+  
 }
 
 
