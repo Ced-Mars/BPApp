@@ -75,7 +75,7 @@ export default function RenderSequence({
               return(
                 <Card style={{flex:1, marginTop:"3px", backgroundColor: i == activeStep ? 'lightblue' : value.status == "SUCCESS" ? 'lightgreen' : 'lightgrey'}}>
                   <ListItem key={i} style={listitems}> 
-                    <ListItemText primary={`${value["target"]} Action`} style={listitems}>
+                    <ListItemText primary={value.target == "ROBOT" ? "Séquence Robot" : value.stepStages[0].type == "UNLOAD.EFFECTOR" ? "Démonter Outil" : "Monter Outil"} style={listitems}>
                     </ListItemText>
                       {value.target == "USER" ? i == activeStep ? <div style={listitems}><Button>Valider</Button> </div> : <div style={listitems}></div> : i == activeStep ? <div style={listitems}>{percentage} %</div> : <div style={listitems}></div> }
                       <div style={listitems}>{value["status"]}</div>

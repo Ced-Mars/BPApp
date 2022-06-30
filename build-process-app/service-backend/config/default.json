@@ -14,7 +14,8 @@
         "opts":[
             { "header":{ "publisher" : "sequencer", "path" : "/buildProcess/all", "x-match": "all" }, "routing_key":"report.hmi"}, 
             { "header":{ "publisher" : "sequencer", "path" : "/buildProcess/status", "x-match": "all" }, "routing_key":"report.hmi"}, 
-            { "header":{ "publisher" : "sequencerHMI", "path" : "/hmi/reset", "x-match": "all" }, "routing_key":"hmi.update"}
+            { "header":{ "publisher" : "sequencerHMI", "path" : "/hmi/reset", "x-match": "all" }, "routing_key":"hmi.update"},
+            { "header":{ "publisher" : "sequencerHMI", "path" : "/hmi/manipulation/info", "x-match": "all" }, "routing_key":"hmi.update"}
         ]
     }
 }

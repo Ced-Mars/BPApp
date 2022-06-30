@@ -2,10 +2,11 @@
 import handleReceivedAction from "../../services/MARS/handler/handleAction";
 import handleResetHMI from "../../services/MARS/handler/resetHMI";
 import handleBuildProcess from "../../services/MARS/handler/handleBuildProcess";
+import myPromise from "../../models/getFromDB";
 
 //Name of the file for debugging purpose
 const FILE = "rabbitMQRouting.js ";
-const PUBLISHER = "buildProcessorHMI";
+const PUBLISHER = "build_processorHMI";
 
 async function handleRoutingServerData(data, exchange, channel){
     const TAG = "FUNCTION handleRoutingServerData: ";
@@ -28,6 +29,15 @@ async function handleRoutingServerData(data, exchange, channel){
       if(data.properties.headers.path == "/hmi/reset"){
         console.log(FILE + TAG + "Reset HMI");
         //handleResetHMI();
+      }else if (data.properties.headers.path == "/hmi/manipulation/info"){
+        //Receive uid in content of the message -- String value
+        console.log("resquest of manip info from sequencerHMI");
+        var process = await myPromise("MARS", "process");
+        var build_process = await myPromise("MARS", "buildprocess");
+        var dataToSend = build_process.data[process.activeStep].stepStages;
+        console.log(FILE + TAG + "data to send : ", dataToSend);
+        responseManipInfo(exchange, channel, data, dataToSend);
+
       }else{
         console.log("Message received with routing key hmi.update does not have a recognized path");
       } 
@@ -39,11 +49,19 @@ async function handleRoutingServerData(data, exchange, channel){
 
 function responseSuccessToSender(exchange, channel, msg, status){
   const TAG = "FUNC responseSuccessToSender: ";
-
   try{
     channel.publish(exchange, msg.properties.headers.report_topic, Buffer.from(JSON.stringify({status: status})), { headers: {publisher : PUBLISHER}});
   }catch(e){
-    console.log(FILE + TAG + "could not send response message to sender : ", e);
+    console.log(FILE + TAG + "could not send response message to publisher : ", e);
+  }
+}
+
+function responseManipInfo(exchange, channel, msg, dataToSend){
+  const TAG = "FUNC responseManipInfo: ";
+  try{
+    channel.publish(exchange, msg.properties.headers.report_topic, Buffer.from(JSON.stringify({status: "SUCCESS"})), { headers: {publisher : PUBLISHER, path:"hmi/manipulation/response"}});
+  }catch(e){
+    console.log(FILE + TAG + "could not send response Manip Info to publisher : ", e);
   }
 }
 
